@@ -29,7 +29,7 @@ pub mod chain_fund_me {
         end_time: i64,
         metadata_uri: String,
         other_token_mints: Vec<Pubkey>,
-    ) -> Result<()> {
+    ) -> Result<()>{
         process_create_campaign(ctx, start_time, end_time, metadata_uri, other_token_mints)
     }
 
@@ -49,6 +49,11 @@ pub mod chain_fund_me {
     pub fn pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
         process_pause_campaign(ctx, paused)
     }   
+
+
+    pub fn withdraw(ctx: Context<Withdraw>, is_token:bool)-> Result<()>{
+        process_withdraw(ctx, is_token)
+    }
 
 
 }

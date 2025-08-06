@@ -21,4 +21,5 @@ pub struct Campaign {
     pub ended: bool,
     pub funders_count: u64,
     pub funders: Vec<Funder>,
+    pub bump:u8
 }

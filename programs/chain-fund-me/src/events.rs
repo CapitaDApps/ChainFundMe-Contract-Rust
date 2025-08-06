@@ -17,11 +17,6 @@ pub struct Deposited {
 #[event]
 pub struct WithdrawApproved {}
 
-#[event]
-pub struct WithdrawnSol {
-    pub owner: Pubkey,
-    pub amount: u64,
-}
 
 #[event]
 pub struct PurchaseMultiplier {

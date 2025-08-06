@@ -13,8 +13,8 @@ pub use contribute::*;
 pub mod approve_withdraw;
 pub use approve_withdraw::*;
 
-// pub mod withdraw;
-// pub use withdraw::*;
+pub mod withdraw;
+pub use withdraw::*;
 
 // pub mod purchase_multiplier_tier;
 // pub use purchase_multiplier_tier::*;
