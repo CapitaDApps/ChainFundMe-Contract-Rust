@@ -13,11 +13,11 @@ pub use contribute::*;
 pub mod approve_withdraw;
 pub use approve_withdraw::*;
 
-pub mod withdraw;
-pub use withdraw::*;
+// pub mod withdraw;
+// pub use withdraw::*;
 
-pub mod purchase_multiplier_tier;
-pub use purchase_multiplier_tier::*;
+// pub mod purchase_multiplier_tier;
+// pub use purchase_multiplier_tier::*;
 
 pub mod initialize_points;
 pub use initialize_points::*;
@@ -41,3 +41,6 @@ pub use remove_moderator::*;
 
 pub mod add_moderator;
 pub use add_moderator::*;
+
+pub mod end_campaign;
+pub use end_campaign::*;

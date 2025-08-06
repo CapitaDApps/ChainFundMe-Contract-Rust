@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 
-use crate::{Points, Spender};
+use crate::{Points, Spender, CrowdfundingError};
+use crate::events::PurchaseMultiplier;
 
 
 #[derive(Accounts)]
@@ -30,13 +31,13 @@ pub struct PurchaseMultiplier<'info> {
         amount: u64,
     ) -> Result<()> {
         let spender = &mut ctx.accounts.spender;
-        require!(!ctx.accounts.points.is_paused, PointsPaused);
-        require!(spender.multiplier_tier != tier, MultiplierTierAlreadyOwned);
+        require!(!ctx.accounts.points.is_paused, CrowdFundingError::PointsPaused);
+        require!(spender.multiplier_tier != tier, CrowdFundingError::MultiplierTierAlreadyOwned);
 
-        let tier_info = ctx.accounts.points.multiplier_tiers.get(&tier).ok_or(error!(InvalidTier))?;
+        let tier_info = ctx.accounts.points.multiplier_tiers.get(&tier).ok_or(error!(CrowdFundingError::InvalidTier))?;
         // Hardcoded SOL prices (replace with oracle)
         let required_sol = tier_info.price; // Example: 0.01 SOL for Bronze
-        require!(amount >= required_sol, InsufficientSolForTier);
+        require!(amount >= required_sol, CrowdFundingError::InsufficientSolForTier);
 
         // Refund excess SOL
         if amount > required_sol {

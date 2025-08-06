@@ -1,4 +1,12 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Token, Transfer};
+use crate::{Contribution, CrowdfundingError, Factory, Funder, Spender};
+use crate::Campaign;
+use crate::events::Deposited;
+use anchor_lang::system_program;
+use anchor_spl::token;
+use anchor_spl::token::TokenAccount;
+
 
 #[derive(Accounts)]
 pub struct Contribute<'info> {
@@ -7,7 +15,7 @@ pub struct Contribute<'info> {
     #[account(
         init_if_needed,
         payer = contributor,
-        space = 8 + 32 + 32 + 8 + 8, // Approx space for Contribution
+        space = 8 + 32 + 32 + 8 + 8, 
         seeds = [b"contribution", contributor.key().as_ref(), campaign.key().as_ref()],
         bump
     )]
@@ -16,6 +24,7 @@ pub struct Contribute<'info> {
     pub contributor: Signer<'info>,
     #[account(mut)]
     pub factory: Account<'info, Factory>,
+    ///CHECK:  This ensures fee wallet is a valid account
     #[account(mut)]
     pub fee_wallet: AccountInfo<'info>,
     #[account(mut)]
@@ -39,21 +48,21 @@ pub fn process_contribute(
         let contribution = &mut ctx.accounts.contribution;
         let factory = &ctx.accounts.factory;
 
-        require!(!campaign.is_paused, ErrorCode::FundingPaused);
-        require!(!campaign.ended, ErrorCode::FundingPeriodOver);
+        require!(!campaign.is_paused, CrowdfundingError::CampaignPaused);
+        require!(!campaign.ended, CrowdfundingError::FundingPeriodOver);
         require!(
             Clock::get()?.unix_timestamp >= campaign.start_time,
-            FundingPeriodNotStarted
+            CrowdfundingError::FundingNotStarted
         );
         require!(
             Clock::get()?.unix_timestamp < campaign.end_time,
             CrowdfundingError::FundingPeriodOver
         );
-        require!(amount > 0, InvalidAmount);
-        require!(!factory.is_paused, FactoryPaused);
+        require!(amount > 0, CrowdfundingError::InvalidAmount);
+        require!(!factory.is_paused, CrowdfundingError::FactoryPaused);
         if factory.limits_enabled {
-            require!(campaign.funding_approved, FundingNotApproved);
-            require!(!campaign.funding_disapproved, FundingDisapproved);
+            require!(campaign.funding_approved, CrowdfundingError::FundingNotApproved);
+            require!(!campaign.funding_disapproved, CrowdfundingError::FundingDisapproved);
         }
 
         let fee = (amount as u128 * factory.platform_fee as u128 / 100) as u64;
@@ -67,7 +76,7 @@ pub fn process_contribute(
                 authority: ctx.accounts.contributor.to_account_info(),
             };
             let cpi_program = ctx.accounts.token_program.to_account_info();
-            token::transfer(CpiContext::new(cpi_program, cpi_accounts), amount)?;
+            token::transfer(CpiContext::new(cpi_program.clone(), cpi_accounts), amount)?;
 
             // Transfer fee to fee wallet
             let cpi_accounts_fee = Transfer {
@@ -75,7 +84,7 @@ pub fn process_contribute(
                 to: ctx.accounts.fee_wallet_token.to_account_info(),
                 authority: ctx.accounts.contributor.to_account_info(),
             };
-            token::transfer(CpiContext::new(cpi_program, cpi_accounts_fee), fee)?;
+            token::transfer(CpiContext::new(cpi_program.clone(), cpi_accounts_fee), fee)?;
         } else {
             // Transfer SOL
             system_program::transfer(
@@ -83,7 +92,7 @@ pub fn process_contribute(
                     ctx.accounts.system_program.to_account_info(),
                     system_program::Transfer {
                         from: ctx.accounts.contributor.to_account_info(),
-                        to: ctx.accounts.campaign.to_account_info(),
+                        to: campaign.to_account_info(),
                     },
                 ),
                 net_amount,

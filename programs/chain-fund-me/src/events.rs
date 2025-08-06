@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+
+use crate::MultiplierTier;
 #[event]
 pub struct ChainFundMeCreated {
     pub creator: Pubkey,

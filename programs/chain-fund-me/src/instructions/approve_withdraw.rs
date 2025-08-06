@@ -1,3 +1,5 @@
+use crate::events::WithdrawApproved;
+use crate::{Campaign, CrowdfundingError, Factory};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -5,24 +7,32 @@ pub struct ApproveWithdraw<'info> {
     #[account(mut)]
     pub campaign: Account<'info, Campaign>,
     pub moderator: Signer<'info>,
-    #[account(has_one = moderators @ NotModerator)]
+
     pub factory: Account<'info, Factory>,
 }
-
 pub fn approve_withdraw(ctx: Context<ApproveWithdraw>) -> Result<()> {
-        let campaign = &mut ctx.accounts.campaign;
-        require!(!campaign.is_withdraw_approved, AlreadyApproved);
-        require!(
-            Clock::get()?.unix_timestamp >= campaign.start_time,
-            FundingPeriodNotStarted
-        );
-        require!(
-            Clock::get()?.unix_timestamp >= campaign.end_time || campaign.ended,
-            FundingStillActive
-        );
+    let campaign = &mut ctx.accounts.campaign;
+    let factory = &ctx.accounts.factory;
+    let signer = ctx.accounts.moderator.key();
+    let is_moderator = factory.moderators.iter().any(|(k, v)| *k == signer && *v);
+    require!(is_moderator, CrowdfundingError::NotModerator);
 
-        campaign.is_withdraw_approved = true;
-        campaign.ended = true;
-        emit!(WithdrawApproved {});
-        Ok(())
-    }
+    require!(
+        !campaign.is_withdraw_approved,
+        CrowdfundingError::AlreadyApproved
+    );
+    require!(
+        Clock::get()?.unix_timestamp >= campaign.start_time,
+        CrowdfundingError::FundingNotStarted
+    );
+    require!(
+        Clock::get()?.unix_timestamp >= campaign.end_time || campaign.ended,
+        CrowdfundingError::CampaignStillActive
+    );
+
+    campaign.is_withdraw_approved = true;
+    campaign.ended = true;
+
+    emit!(WithdrawApproved {});
+    Ok(())
+}

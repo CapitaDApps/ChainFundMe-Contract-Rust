@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::Funder;
+
 
 #[account]
 pub struct Campaign {

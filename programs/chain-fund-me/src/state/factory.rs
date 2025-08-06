@@ -1,3 +1,5 @@
+use anchor_lang::prelude::*;
+
 #[account]
 pub struct Factory {
     pub owner: Pubkey,
@@ -7,8 +9,8 @@ pub struct Factory {
     pub deployed_campaigns_count: u64,
     pub limits_enabled: bool,
     pub is_paused: bool,
-    pub campaigns: HashMap<Pubkey, u64>,
-    pub moderators: HashMap<Pubkey, bool>,
-    pub other_accepted_tokens: HashMap<Pubkey, bool>,
-    pub verified_creators: HashMap<Pubkey, bool>,
+    pub campaigns: Vec<(Pubkey, u64)>,
+    pub moderators: Vec<(Pubkey, bool)>,
+    pub other_accepted_tokens: Vec<(Pubkey, bool)>,
+    pub verified_creators: Vec<(Pubkey, bool)>,
 }

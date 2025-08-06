@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+
+
 #[account]
 pub struct Contribution {
     pub contributor: Pubkey,
@@ -8,10 +10,11 @@ pub struct Contribution {
 }
 
 #[account]
+
 pub struct Points {
     pub owner: Pubkey,
     pub is_paused: bool,
-    pub multiplier_tiers: HashMap<MultiplierTier, MultiplierInfo>,
+    pub multiplier_tiers: Vec<(MultiplierTier, MultiplierInfo)>,
 }
 
 #[account]
@@ -22,14 +25,23 @@ pub struct Spender {
     pub points_earned: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]
+#[account]
 pub struct Funder {
     pub funder_address: Pubkey,
     pub token_mint: Pubkey,
     pub amount: u64,
 }
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Clone,
+    Debug,
+    AnchorSerialize,
+    AnchorDeserialize,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,  // ✅ Add this
+    Ord          // ✅ And this
+)]
 pub enum MultiplierTier {
     Base,
     Bronze,
@@ -38,8 +50,7 @@ pub enum MultiplierTier {
     Platinum,
     Diamond,
 }
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[account]
 pub struct MultiplierInfo {
     pub price: u64, // SOL lamports
     pub multiplier: u32,

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use crate::state::factory::Factory;
+
+use crate::Factory;
+
 
 #[derive(Accounts)]
 pub struct InitializeFactory<'info> {

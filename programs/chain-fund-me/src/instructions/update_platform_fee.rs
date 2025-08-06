@@ -1,8 +1,11 @@
 use anchor_lang::prelude::*;
+use crate::CrowdfundingError;
+use crate::Factory;
 
+#[derive(Accounts)]
 pub struct UpdatePlatformFee<'info> {
     #[account(mut)]
-    pub factory: Account<'info, FundingFactory>,
+    pub factory: Account<'info, Factory>,
     pub owner: Signer<'info>,
 }
 

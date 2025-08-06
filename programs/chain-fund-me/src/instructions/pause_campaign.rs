@@ -1,22 +1,27 @@
-use anchor_lang::prelude::*;  
+use crate::state::{Campaign, Factory};
 use crate::CrowdfundingError;
-use crate::state::Campaign;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct PauseCampaign<'info> {
     #[account(mut)]
     pub campaign: Account<'info, Campaign>,
-    pub factory: Account<'info, FundingFactory>,
+    pub factory: Account<'info, Factory>,
     pub moderator: Signer<'info>,
 }
 
+pub fn process_pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
+    let factory = &ctx.accounts.factory;
 
-  pub fn pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
-        let factory = &ctx.accounts.factory;
-        require!(factory.moderators.contains(&ctx.accounts.moderator.key()), CrowdfundingError::NotModerator);
-        
-        let campaign = &mut ctx.accounts.campaign;
-        campaign.is_paused = false;
-        
-        Ok(())
-    }
+    let is_moderator = factory
+        .moderators
+        .iter()
+        .any(|(key, active)| *key == ctx.accounts.moderator.key() && *active);
+
+    require!(is_moderator, CrowdfundingError::NotModerator);
+
+    let campaign = &mut ctx.accounts.campaign;
+    campaign.is_paused = paused;
+
+    Ok(())
+}

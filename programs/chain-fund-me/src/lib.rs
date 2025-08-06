@@ -2,8 +2,8 @@ pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
-pub mod event;
-pub use event::*;
+pub mod events;
+pub use events::*;
 use anchor_lang::prelude::*;
 
 pub use constants::*;
@@ -18,7 +18,7 @@ pub mod chain_fund_me {
 
     use super::*;
 
-    pub fn initialize_factory(ctx: Context<InitializeFactory>, name: String, owner: Pubkey, stablecoin_mint: Pubkey, fee_wallet: Pubkey) -> Result<()> {
+    pub fn initialize_factory(ctx: Context<InitializeFactory>, platform_fee:u8, stablecoin_mint: Pubkey, fee_wallet: Pubkey) -> Result<()> {
         process_initialize_factory(ctx, platform_fee, stablecoin_mint, fee_wallet)
     }
     
