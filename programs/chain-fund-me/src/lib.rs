@@ -11,7 +11,7 @@ pub use instructions::*;
 pub use state::*;
 pub use error::*;
 
-declare_id!("mqcAhBn6aLCnvGdQd12bG9pq6vL3Bj5A5Hmv3qYouGW");
+declare_id!("B2FS9dP7KUp5ptuMZCnc1JMDFCRNbqxrWRisXSwHk6rs");
 
 #[program]
 pub mod chain_fund_me {

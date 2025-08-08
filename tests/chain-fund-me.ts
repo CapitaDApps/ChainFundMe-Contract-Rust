@@ -1,171 +1,234 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { ChainFundMe } from "../target/types/chain_fund_me";
-import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
+import {
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from "@solana/spl-token";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+} from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { assert } from "chai";
+
 describe("chain-fund-me", () => {
-  // Configure the client to use the local cluster.
+  // Set provider
   anchor.setProvider(anchor.AnchorProvider.env());
-
-  const provider = anchor.getProvider();
-
+  const provider = anchor.getProvider() as anchor.AnchorProvider;
   const creator = provider.wallet as anchor.Wallet;
   const connection = provider.connection;
+
+  // Additional keypairs
   const feeWallet = Keypair.generate();
-  const contributor = anchor.web3.Keypair.generate();
-  let campaignTokenAccount;
-  let feeWalletTokenAccount;
-  let contributorTokenAccount;
+  const contributor = Keypair.generate();
+
+  // Token related
+  let stablecoinMint: PublicKey;
+  let campaignTokenAccount: any;
+  let feeWalletTokenAccount: any;
+  let contributorTokenAccount: any;
+  let creatorTokenAccount: any;
+
+  // PDAs
+  let campaignPda: PublicKey;
+  let contributionPda: PublicKey;
+  let spenderPda: PublicKey;
+  let factoryPda: PublicKey;
+
+  // Program
+  const program = anchor.workspace.ChainFundMe as Program<ChainFundMe>;
 
   before(async () => {
-    const stablecoin_mint = await createMint(
+    // Derive factory PDA
+    [factoryPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("factory")],
+      program.programId
+    );
+
+    // Create stablecoin mint
+    stablecoinMint = await createMint(
       connection,
       creator.payer,
       creator.publicKey,
       null,
-      6
-
+      6 // decimals
     );
-    console.log("Stablecoin mint created:", stablecoin_mint.toBase58());
+    console.log("Stablecoin mint:", stablecoinMint.toBase58());
 
-    // Store the stablecoin mint in a global variable for use in tests
-    globalThis.stablecoin_mint = stablecoin_mint;
-
-    const mint = await createMint(
-      provider.connection,
+    // Create contributor token account
+    contributorTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
       creator.payer,
-      creator.publicKey,
-      null,
-      6
-    );
-
-    let contributorTokenAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      creator.payer,
-      stablecoin_mint,
+      stablecoinMint,
       contributor.publicKey
     );
 
-    campaignTokenAccount = await getOrCreateAssociatedTokenAccount(
-      provider.connection,
-      creator.payer,
-      stablecoin_mint,
-      creator.publicKey,
-      true
-    );
-
+    // Create fee wallet token account
     feeWalletTokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       creator.payer,
-      stablecoin_mint,
-      feeWallet.publicKey,
-      true
+      stablecoinMint,
+      feeWallet.publicKey
     );
 
-    await mintTo(
-      provider.connection,
+    creatorTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
       creator.payer,
-      mint,
+      stablecoinMint,
+      creator.publicKey
+    );
+
+    // Mint tokens to contributor
+    await mintTo(
+      connection,
+      creator.payer,
+      stablecoinMint,
       contributorTokenAccount.address,
       creator.publicKey,
       1_000_000_000 // 1000 tokens
     );
   });
-  const stablecoin_mint = globalThis.stablecoin_mint as PublicKey;
-
-  const program = anchor.workspace.chainFundMe as Program<ChainFundMe>;
-  const factoryKeypair = anchor.web3.Keypair.generate();
-  const start_time = Math.floor(Date.now() / 1000) + 60; // Start in 1 minute
-  const end_time = start_time + 3600; // End in 1 hour
-  const [campaignPda, _bump] = anchor.web3.PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("campaign"),
-      creator.publicKey.toBuffer(),
-      new anchor.BN(start_time).toArrayLike(Buffer, "le", 8),
-    ],
-    program.programId
-  );
-  const [contributionPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("contribution"), creator.publicKey.toBuffer(), campaignPda.toBuffer()],
-    program.programId
-  );
-  const [spenderPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("spender"), contributor.publicKey.toBuffer()],
-    program.programId
-  );
-
-  const [factoryPda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from("factory")],
-    program.programId
-  );
-
 
   it("Initialize factory", async () => {
-    // Add your test here.
-    const tx = await program.methods.initializeFactory(20, stablecoin_mint, feeWallet.publicKey).rpc();
-    console.log("Initialize Factory tx signature", tx);
+    const tx = await program.methods
+      .initializeFactory(20, stablecoinMint, feeWallet.publicKey)
+      .accounts({
+        owner: creator.publicKey,
+        //@ts-ignore
+        factory: factoryPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log("Initialize Factory tx:", tx);
   });
 
   it("Create Campaign", async () => {
-    const start_time = Math.floor(Date.now() / 1000) + 60; // Start in 1 minute
-    const end_time = start_time + 3600; // End in 1 hour
     const metadata_uri = "https://example.com/campaign_metadata.json";
-    const other_token_mints: anchor.web3.PublicKey[] = [];
+    const other_token_mints: PublicKey[] = [];
 
-    const tx = await program.methods.createCampaign(
-      new anchor.BN(start_time),
-      new anchor.BN(end_time),
-      metadata_uri,
-      other_token_mints
-    ).accounts({
-      factory: factoryKeypair.publicKey,
-      creator: creator.publicKey,
-      //@ts-ignore
-      campaign: campaignPda,
-      systemProgram: SystemProgram.programId
+    const now = Math.floor(Date.now() / 1000);
+    const start_time = new anchor.BN(now + 5); 
+    const end_time = new anchor.BN(now + 3600);
 
-    }).rpc();
-    console.log("Create Campaign tx signature", tx);
+    // Derive campaign PDA
+    [campaignPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("campaign"),
+        creator.publicKey.toBuffer(),
+        start_time.toArrayLike(Buffer, "le", 8),
+      ],
+      program.programId
+    );
+
+    // Campaign token account (PDA owns it)
+    campaignTokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      creator.payer,
+      stablecoinMint,
+      campaignPda,
+      true // allow owner to be PDA
+    );
+
+    // Contribution PDA
+    [contributionPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("contribution"),
+        contributor.publicKey.toBuffer(),
+        campaignPda.toBuffer(),
+      ],
+      program.programId
+    );
+
+    // Spender PDA
+    [spenderPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("spender"), contributor.publicKey.toBuffer()],
+      program.programId
+    );
+
+    const tx = await program.methods
+      .createCampaign(start_time, end_time, metadata_uri, other_token_mints)
+      .accounts({
+        factory: factoryPda,
+        creator: creator.publicKey,
+        //@ts-ignore
+        campaign: campaignPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    console.log("Create Campaign tx:", tx);
+
+    // Wait until campaign starts
+    await new Promise((res) => setTimeout(res, 6000));
   });
 
   it("Contribute to Campaign", async () => {
-    const contributionAmount = new anchor.BN(1000000); // 1 stablecoin (assuming 6 decimals)
+    // Airdrop SOL to contributor for fees
+    const sig = await connection.requestAirdrop(
+      contributor.publicKey,
+      1_000_000_000
+    );
+    await connection.confirmTransaction(sig, "confirmed");
 
-    const tx = await program.methods.contribute(contributionAmount, false).accounts({
-      campaign: campaignPda,
-      //@ts-ignore
-      contribution: contributionPda,
-      contributor: contributor.publicKey,
-      factory: factoryPda,
-      feeWallet: feeWallet.publicKey,
-      campaignToken: campaignTokenAccount.address,
-      contributorToken: contributorTokenAccount.address,
-      feeWalletToken: feeWalletTokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      spender: spenderPda,
-    }).signers([factoryKeypair]).rpc();
-    const contribution = await program.account.contribution.fetch(contributionPda);
-    assert.equal(contribution.tokenAmount.toNumber(), 500_000_000);
+    const contributionAmount = new anchor.BN(1_000_000); 
+
+    const tx = await program.methods
+      .contribute(contributionAmount, true)
+      .accounts({
+        campaign: campaignPda,
+        //@ts-ignore
+        contribution: contributionPda,
+        contributor: contributor.publicKey,
+        factory: factoryPda,
+        feeWallet: feeWallet.publicKey,
+        campaignToken: campaignTokenAccount.address,
+        contributorToken: contributorTokenAccount.address,
+        feeWalletToken: feeWalletTokenAccount.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        spender: spenderPda,
+      })
+      .signers([contributor])
+      .rpc();
+
+    console.log("Contribute tx:", tx);
+
+    const contribution = await program.account.contribution.fetch(
+      contributionPda
+    );
+    assert.equal(contribution.tokenAmount.toNumber(), 1_000_000);
   });
 
-  it("Withdraw", async()=>{
-    const tx = await program.methods.withdraw(true).accounts({
-      factory: factoryPda,
-      campaign: campaignPda,
-      owner: creator.publicKey,
-      campaignToken: campaignTokenAccount.address,
-      spender: spenderPda,
-      ownerToken: contributorTokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: SystemProgram.programId,
-    }).rpc();
+  it("Withdraw", async () => {
+    const campaignAccount = await program.account.campaign.fetch(campaignPda);
+    const startTimeBn = campaignAccount.startTime;
 
-    console.log("Withdraw tx signature", tx);
-  })
+    const [withdrawCampaignPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("campaign"),
+        creator.publicKey.toBuffer(),
+        startTimeBn.toArrayLike(Buffer, "le", 8),
+      ],
+      program.programId
+    );
 
+    const tx = await program.methods
+      .withdraw(true)
+      .accountsStrict({
+        factory: factoryPda,
+        campaign: withdrawCampaignPda,
+        owner: creator.publicKey,
+        campaignToken: campaignTokenAccount.address,
+        spender: spenderPda,
+        ownerToken: creatorTokenAccount.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
 
-
+    console.log("Withdraw tx:", tx);
+  });
 });

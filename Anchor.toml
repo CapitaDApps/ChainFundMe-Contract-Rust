@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-chain_fund_me = "mqcAhBn6aLCnvGdQd12bG9pq6vL3Bj5A5Hmv3qYouGW"
+chain_fund_me = "B2FS9dP7KUp5ptuMZCnc1JMDFCRNbqxrWRisXSwHk6rs"
 
 [registry]
 url = "https://api.apr.dev"

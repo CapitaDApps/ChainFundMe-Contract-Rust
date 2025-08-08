@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 
 #[account]
+#[derive(InitSpace)]
 pub struct Contribution {
     pub contributor: Pubkey,
     pub campaign: Pubkey,
@@ -18,6 +19,7 @@ pub struct Points {
 }
 
 #[account]
+#[derive(InitSpace)]
 pub struct Spender {
     pub owner: Pubkey,
     pub multiplier_tier: MultiplierTier,
@@ -32,6 +34,7 @@ pub struct Funder {
     pub amount: u64,
 }
 #[derive(
+    InitSpace,
     Clone,
     Debug,
     AnchorSerialize,
