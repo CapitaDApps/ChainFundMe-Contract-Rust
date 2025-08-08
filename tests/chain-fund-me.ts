@@ -15,40 +15,36 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { assert } from "chai";
 
 describe("chain-fund-me", () => {
-  // Set provider
+
   anchor.setProvider(anchor.AnchorProvider.env());
   const provider = anchor.getProvider() as anchor.AnchorProvider;
   const creator = provider.wallet as anchor.Wallet;
   const connection = provider.connection;
 
-  // Additional keypairs
+
   const feeWallet = Keypair.generate();
   const contributor = Keypair.generate();
 
-  // Token related
   let stablecoinMint: PublicKey;
   let campaignTokenAccount: any;
   let feeWalletTokenAccount: any;
   let contributorTokenAccount: any;
   let creatorTokenAccount: any;
 
-  // PDAs
   let campaignPda: PublicKey;
   let contributionPda: PublicKey;
   let spenderPda: PublicKey;
   let factoryPda: PublicKey;
 
-  // Program
   const program = anchor.workspace.ChainFundMe as Program<ChainFundMe>;
 
   before(async () => {
-    // Derive factory PDA
+  
     [factoryPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("factory")],
       program.programId
     );
 
-    // Create stablecoin mint
     stablecoinMint = await createMint(
       connection,
       creator.payer,
@@ -122,6 +118,7 @@ describe("chain-fund-me", () => {
       ],
       program.programId
     );
+    console.log("Campaign PDA:", campaignPda.toBase58());
 
     // Campaign token account (PDA owns it)
     campaignTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -205,6 +202,8 @@ describe("chain-fund-me", () => {
   it("Withdraw", async () => {
     const campaignAccount = await program.account.campaign.fetch(campaignPda);
     const startTimeBn = campaignAccount.startTime;
+    console.log("Campaign start time:", startTimeBn.toString());
+    console.log("Campaign token account:", campaignTokenAccount);
 
     const [withdrawCampaignPda] = PublicKey.findProgramAddressSync(
       [

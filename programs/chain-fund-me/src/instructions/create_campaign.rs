@@ -53,6 +53,7 @@ pub fn process_create_campaign(
     campaign.funders_count = 0;
     campaign.is_paused = false;
     campaign.ended = false;
+    campaign.bump = ctx.bumps.campaign;
     let campaign_id = factory.deployed_campaigns_count;
     factory.campaigns.push((campaign.key(), campaign_id));
 
