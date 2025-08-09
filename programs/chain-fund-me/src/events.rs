@@ -19,7 +19,7 @@ pub struct WithdrawApproved {}
 
 
 #[event]
-pub struct PurchaseMultiplier {
+pub struct PurchasedMultiplier {
     pub spender: Pubkey,
     pub tier: MultiplierTier,
     pub price_paid: u64,

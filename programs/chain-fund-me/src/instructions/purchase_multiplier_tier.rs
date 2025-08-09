@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
-
+use anchor_lang::system_program;
 use crate::{Points, Spender, CrowdfundingError};
-use crate::events::PurchaseMultiplier;
+use crate::events::PurchasedMultiplier;
+use crate::MultiplierTier;
 
 
 #[derive(Accounts)]
@@ -19,6 +20,7 @@ pub struct PurchaseMultiplier<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(mut)]
+    ///CHECK - Checks if this is a valid wallet
     pub fee_wallet: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
 }
@@ -31,13 +33,18 @@ pub struct PurchaseMultiplier<'info> {
         amount: u64,
     ) -> Result<()> {
         let spender = &mut ctx.accounts.spender;
-        require!(!ctx.accounts.points.is_paused, CrowdFundingError::PointsPaused);
-        require!(spender.multiplier_tier != tier, CrowdFundingError::MultiplierTierAlreadyOwned);
+        require!(!ctx.accounts.points.is_paused, CrowdfundingError::PointsPaused);
+        require!(spender.multiplier_tier != tier, CrowdfundingError::MultiplierAlreadyOwned);
 
-        let tier_info = ctx.accounts.points.multiplier_tiers.get(&tier).ok_or(error!(CrowdFundingError::InvalidTier))?;
+        let tier_info = ctx.accounts.points
+    .multiplier_tiers
+    .iter()
+    .find(|(t, _)| *t == tier)
+    .map(|(_, info)| info)
+    .ok_or(error!(CrowdfundingError::InvalidTier))?;
         // Hardcoded SOL prices (replace with oracle)
         let required_sol = tier_info.price; // Example: 0.01 SOL for Bronze
-        require!(amount >= required_sol, CrowdFundingError::InsufficientSolForTier);
+        require!(amount >= required_sol, CrowdfundingError::InsufficientSolForTier);
 
         // Refund excess SOL
         if amount > required_sol {
@@ -65,17 +72,18 @@ pub struct PurchaseMultiplier<'info> {
             required_sol,
         )?;
 
-        // Update spender
-        spender.multiplier_tier = tier;
-        spender.multiplier = tier_info.multiplier;
-        spender.points_earned += amount; // Mint points for purchase
+   
+spender.multiplier_tier = tier.clone();
+spender.multiplier = tier_info.multiplier;
+spender.points_earned += amount;
 
-        emit!(PurchaseMultiplier {
-            spender: ctx.accounts.payer.key(),
-            tier,
-            price_paid: amount,
-            multiplier: tier_info.multiplier,
-        });
+
+emit!(PurchasedMultiplier {
+    spender: ctx.accounts.payer.key(),
+    tier,
+    price_paid: amount,
+    multiplier: tier_info.multiplier,
+});
 
         Ok(())
     }

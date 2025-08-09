@@ -25,6 +25,8 @@ pub enum CrowdfundingError {
     TokenNotAccepted,
     #[msg("Invalid funding amount")]
     InvalidAmount,
+    #[msg("Invalid Tier")]
+    InvalidTier,
     #[msg("Campaign funding not approved")]
     FundingNotApproved,
     #[msg("Campaign funding disapproved")]
@@ -45,4 +47,5 @@ pub enum CrowdfundingError {
     InvalidDates,
     #[msg("Campaign already approved")]
     AlreadyApproved,
+
 }

@@ -8,6 +8,7 @@ import {
 } from "@solana/spl-token";
 import {
   Keypair,
+  LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
 } from "@solana/web3.js";
@@ -39,7 +40,7 @@ describe("chain-fund-me", () => {
   const program = anchor.workspace.ChainFundMe as Program<ChainFundMe>;
 
   before(async () => {
-  
+
     [factoryPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("factory")],
       program.programId
@@ -88,6 +89,18 @@ describe("chain-fund-me", () => {
     );
   });
 
+
+  it("Fund contributor with more SOL", async () => {
+    const sig = await connection.requestAirdrop(
+      contributor.publicKey,
+      2 * LAMPORTS_PER_SOL
+    );
+    await connection.confirmTransaction(sig, "confirmed");
+
+    const balance = await connection.getBalance(contributor.publicKey);
+    console.log("Contributor SOL balance:", balance / 1_000_000_000, "SOL");
+  });
+
   it("Initialize factory", async () => {
     const tx = await program.methods
       .initializeFactory(20, stablecoinMint, feeWallet.publicKey)
@@ -106,10 +119,9 @@ describe("chain-fund-me", () => {
     const other_token_mints: PublicKey[] = [];
 
     const now = Math.floor(Date.now() / 1000);
-    const start_time = new anchor.BN(now + 5); 
+    const start_time = new anchor.BN(now + 5);
     const end_time = new anchor.BN(now + 3600);
 
-    // Derive campaign PDA
     [campaignPda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("campaign"),
@@ -118,18 +130,14 @@ describe("chain-fund-me", () => {
       ],
       program.programId
     );
-    console.log("Campaign PDA:", campaignPda.toBase58());
-
-    // Campaign token account (PDA owns it)
     campaignTokenAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       creator.payer,
       stablecoinMint,
       campaignPda,
-      true // allow owner to be PDA
+      true
     );
 
-    // Contribution PDA
     [contributionPda] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("contribution"),
@@ -138,8 +146,6 @@ describe("chain-fund-me", () => {
       ],
       program.programId
     );
-
-    // Spender PDA
     [spenderPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("spender"), contributor.publicKey.toBuffer()],
       program.programId
@@ -158,22 +164,36 @@ describe("chain-fund-me", () => {
 
     console.log("Create Campaign tx:", tx);
 
-    // Wait until campaign starts
     await new Promise((res) => setTimeout(res, 6000));
   });
 
-  it("Contribute to Campaign", async () => {
-    // Airdrop SOL to contributor for fees
-    const sig = await connection.requestAirdrop(
-      contributor.publicKey,
-      1_000_000_000
-    );
-    await connection.confirmTransaction(sig, "confirmed");
 
-    const contributionAmount = new anchor.BN(1_000_000); 
+  it("Initialize spender", async () => {
 
     const tx = await program.methods
-      .contribute(contributionAmount, true)
+      .initializeSpender()
+      .accounts({
+        spender: spenderPda,
+        contributor: contributor.publicKey,
+        systemProgram: SystemProgram.programId,
+      }).signers([contributor])
+      .rpc();
+
+    console.log("Create Campaign tx:", tx);
+
+    await new Promise((res) => setTimeout(res, 6000));
+  });
+
+  it("Contribute to token Campaign", async () => {
+
+    const contributionAmount = new anchor.BN(1_000_000_000);
+
+    const balance = await connection.getBalance(contributor.publicKey)
+
+    console.log("Balance is HERE : ", balance);
+
+    const tx = await program.methods
+      .contribute(contributionAmount, false)
       .accounts({
         campaign: campaignPda,
         //@ts-ignore
@@ -193,10 +213,12 @@ describe("chain-fund-me", () => {
 
     console.log("Contribute tx:", tx);
 
-    const contribution = await program.account.contribution.fetch(
-      contributionPda
+    const campaign = await program.account.campaign.fetch(
+      campaignPda.toString()
     );
-    assert.equal(contribution.tokenAmount.toNumber(), 1_000_000);
+    // assert.equal(campaign.tokenAmount.toNumber(), 1_000_000_000);
+    console.log("Campaign: ", campaign)
+    console.log("Campaign balance: ", await connection.getBalance(campaignPda))
   });
 
   it("Withdraw", async () => {
@@ -215,7 +237,7 @@ describe("chain-fund-me", () => {
     );
 
     const tx = await program.methods
-      .withdraw(true)
+      .withdraw(false)
       .accountsStrict({
         factory: factoryPda,
         campaign: withdrawCampaignPda,

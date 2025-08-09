@@ -36,11 +36,7 @@ pub struct Contribute<'info> {
     pub system_program: Program<'info, System>,
 
     #[account(
-        init_if_needed,
-        payer = contributor,
-        space = 8 + Spender::INIT_SPACE,
-        seeds = [b"spender", contributor.key().as_ref()],
-        bump
+        mut
     )]
     pub spender: Account<'info, Spender>,
 }
@@ -77,7 +73,6 @@ pub fn process_contribute(ctx: Context<Contribute>, amount: u64, is_token: bool)
     let net_amount = amount - fee;
 
     if is_token {
-        // Transfer tokens (SPL equivalent of ERC20)
         let cpi_accounts = Transfer {
             from: ctx.accounts.contributor_token.to_account_info(),
             to: ctx.accounts.campaign_token.to_account_info(),
@@ -88,8 +83,6 @@ pub fn process_contribute(ctx: Context<Contribute>, amount: u64, is_token: bool)
             CpiContext::new(cpi_program.clone(), cpi_accounts),
             net_amount,
         )?;
-
-        // Transfer fee to fee wallet
         let cpi_accounts_fee = Transfer {
             from: ctx.accounts.contributor_token.to_account_info(),
             to: ctx.accounts.fee_wallet_token.to_account_info(),
