@@ -1,15 +1,15 @@
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod instructions;
 pub mod state;
-pub mod events;
-pub use events::*;
 use anchor_lang::prelude::*;
+pub use events::*;
 
 pub use constants::*;
+pub use error::*;
 pub use instructions::*;
 pub use state::*;
-pub use error::*;
 
 declare_id!("B2FS9dP7KUp5ptuMZCnc1JMDFCRNbqxrWRisXSwHk6rs");
 
@@ -18,10 +18,22 @@ pub mod chain_fund_me {
 
     use super::*;
 
-    pub fn initialize_factory(ctx: Context<InitializeFactory>, platform_fee:u8, stablecoin_mint: Pubkey, fee_wallet: Pubkey) -> Result<()> {
-        process_initialize_factory(ctx, platform_fee, stablecoin_mint, fee_wallet)
+    pub fn initialize_factory(
+        ctx: Context<InitializeFactory>,
+        platform_fee: u8,
+        stablecoin_mint: Pubkey,
+        fee_wallet: Pubkey,
+        other_accepted_tokens: Vec<AcceptedToken>,
+    ) -> Result<()> {
+        process_initialize_factory(
+            ctx,
+            platform_fee,
+            stablecoin_mint,
+            fee_wallet,
+            other_accepted_tokens,
+        )
     }
-    
+
     pub fn create_campaign(
         ctx: Context<CreateCampaign>,
 
@@ -29,16 +41,11 @@ pub mod chain_fund_me {
         end_time: i64,
         metadata_uri: String,
         other_token_mints: Vec<Pubkey>,
-    ) -> Result<()>{
+    ) -> Result<()> {
         process_create_campaign(ctx, start_time, end_time, metadata_uri, other_token_mints)
     }
 
-    pub fn initialize_spender(ctx: Context<InitializeSpender>)->Result<()>{
-        process_init_spender(ctx)
-    }
-
-
-    pub fn contribute(ctx:Context<Contribute>, amount: u64, is_token:bool) -> Result<()> {
+    pub fn contribute(ctx: Context<Contribute>, amount: u64, is_token: bool) -> Result<()> {
         process_contribute(ctx, amount, is_token)
     }
 
@@ -52,13 +59,9 @@ pub mod chain_fund_me {
 
     pub fn pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
         process_pause_campaign(ctx, paused)
-    }   
-
-
-    pub fn withdraw(ctx: Context<Withdraw>, is_token:bool)-> Result<()>{
-        process_withdraw(ctx, is_token)
     }
 
-
+    pub fn withdraw<'info>(ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>) -> Result<()> {
+        process_withdraw(ctx)
+    }
 }
-

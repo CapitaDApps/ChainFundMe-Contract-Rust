@@ -10,8 +10,13 @@ pub struct Contribution {
     pub token_amount: u64,
 }
 
-#[account]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct AcceptedToken {
+    pub mint: Pubkey,
+    pub allowed: bool,
+}
 
+#[account]
 pub struct Points {
     pub owner: Pubkey,
     pub is_paused: bool,

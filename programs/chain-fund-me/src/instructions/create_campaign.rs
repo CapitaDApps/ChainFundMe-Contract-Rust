@@ -1,5 +1,5 @@
 use crate::events::ChainFundMeCreated;
-use crate::{Campaign, CrowdfundingError, Factory};
+use crate::{Campaign, CrowdfundingError, Factory, Spender};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -16,6 +16,15 @@ pub struct CreateCampaign<'info> {
         bump
     )]
     pub campaign: Account<'info, Campaign>,
+
+    #[account(
+        init,
+        payer = creator,
+        space = 8 + Spender::INIT_SPACE,
+        seeds = [b"spender", creator.key().as_ref()],
+        bump
+    )]
+    pub spender: Account<'info, Spender>,
 
     #[account(mut)]
     pub creator: Signer<'info>,
@@ -57,10 +66,16 @@ pub fn process_create_campaign(
     let campaign_id = factory.deployed_campaigns_count;
     factory.campaigns.push((campaign.key(), campaign_id));
 
+    let spender = &mut ctx.accounts.spender;
+    spender.multiplier+=1;
+    // spender.multiplier_tier = 0;
+    spender.points_earned += 1;
+
     emit!(ChainFundMeCreated {
         creator: ctx.accounts.creator.key(),
         campaign: campaign.key(),
     });
+    
 
     Ok(())
 }

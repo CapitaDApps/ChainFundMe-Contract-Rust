@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct Factory {
+    pub factory_id: u64,
     pub owner: Pubkey,
     pub platform_fee: u8,
     pub stablecoin_mint: Pubkey,

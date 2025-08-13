@@ -47,5 +47,7 @@ pub enum CrowdfundingError {
     InvalidDates,
     #[msg("Campaign already approved")]
     AlreadyApproved,
+    #[msg("Accounts provided do not match expected format")]
+    InvalidAccounts
 
 }

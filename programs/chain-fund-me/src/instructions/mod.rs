@@ -19,9 +19,6 @@ pub use withdraw::*;
 pub mod purchase_multiplier_tier;
 pub use purchase_multiplier_tier::*;
 
-pub mod initialize_spender;
-pub use initialize_spender::*;
-
 pub mod initialize_points;
 pub use initialize_points::*;
 
