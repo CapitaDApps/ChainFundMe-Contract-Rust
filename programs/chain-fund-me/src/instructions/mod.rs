@@ -6,9 +6,11 @@ pub mod initialize_factory;
 pub use initialize_factory::*;
 
 
-pub mod contribute;
-pub use contribute::*;
+pub mod contributetoken;
+pub use contributetoken::*;
 
+pub mod contributesol;
+pub use contributesol::*;
 
 pub mod approve_withdraw;
 pub use approve_withdraw::*;
