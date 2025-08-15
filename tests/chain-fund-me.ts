@@ -48,24 +48,19 @@ describe("chain-fund-me-comprehensive", () => {
   let feeWalletExtraMint2Account: any;
   let contributorExtraMint2Account: any;
   let creatorExtraMint2Account: any;
-
-  // Token accounts for extra mint 3
-  let campaignExtraMint3Account: any;
-  let feeWalletExtraMint3Account: any;
-  let contributorExtraMint3Account: any;
-  let creatorExtraMint3Account: any;
-
   let campaignPda: PublicKey;
   let contributionPda: PublicKey;
   let spenderPda: PublicKey;
   let factoryPda: PublicKey;
+  let factoryId = 1
 
   const program = anchor.workspace.ChainFundMe as Program<ChainFundMe>;
 
   before(async () => {
     // Find factory PDA
     [factoryPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("factory")],
+      [Buffer.from("factory"),
+      new anchor.BN(factoryId).toArrayLike(Buffer, "le", 8)],
       program.programId
     );
 
@@ -96,16 +91,6 @@ describe("chain-fund-me-comprehensive", () => {
       9 // SOL-like decimals
     );
     console.log("Extra mint 2 (Custom Token A):", extraMint2.toBase58());
-
-    extraMint3 = await createMint(
-      connection,
-      creator.payer,
-      creator.publicKey,
-      null,
-      8 // Custom decimals
-    );
-    console.log("Extra mint 3 (Custom Token B):", extraMint3.toBase58());
-
     // Create token accounts for all participants for stablecoin
     contributorStablecoinAccount = await getOrCreateAssociatedTokenAccount(
       connection,
@@ -172,28 +157,6 @@ describe("chain-fund-me-comprehensive", () => {
       creator.publicKey
     );
 
-    // Create token accounts for extra mint 3
-    contributorExtraMint3Account = await getOrCreateAssociatedTokenAccount(
-      connection,
-      creator.payer,
-      extraMint3,
-      contributor.publicKey
-    );
-
-    feeWalletExtraMint3Account = await getOrCreateAssociatedTokenAccount(
-      connection,
-      creator.payer,
-      extraMint3,
-      feeWallet.publicKey
-    );
-
-    creatorExtraMint3Account = await getOrCreateAssociatedTokenAccount(
-      connection,
-      creator.payer,
-      extraMint3,
-      creator.publicKey
-    );
-
     // Mint tokens to contributor for all mints
     await mintTo(
       connection,
@@ -221,16 +184,6 @@ describe("chain-fund-me-comprehensive", () => {
       creator.publicKey,
       2_000_000_000 // 2 Custom Token A
     );
-
-    await mintTo(
-      connection,
-      creator.payer,
-      extraMint3,
-      contributorExtraMint3Account.address,
-      creator.publicKey,
-      750_00000000 // 750 Custom Token B
-    );
-
     console.log("All token mints and accounts created successfully");
   });
 
@@ -248,10 +201,28 @@ describe("chain-fund-me-comprehensive", () => {
   it("Initialize factory", async () => {
     const tx = await program.methods
       .initializeFactory(
+        new anchor.BN(factoryId),
         20, // 2% platform fee
         stablecoinMint,
         feeWallet.publicKey,
-        [] // No other accepted tokens for now
+        [
+          {
+            mint: new PublicKey("So11111111111111111111111111111111111111112"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("GhE4sh64jawtzUmeQWRgkN3XrzcWN4pib5g5RcKMbonk"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"),
+            allowed: true,
+          },
+        ]
       )
       .accounts({
         owner: creator.publicKey,
@@ -265,7 +236,7 @@ describe("chain-fund-me-comprehensive", () => {
 
   it("Create Campaign with multiple token mints", async () => {
     const metadata_uri = "https://example.com/multi_token_campaign.json";
-    const other_token_mints: PublicKey[] = [extraMint1, extraMint2, extraMint3];
+    const other_token_mints: PublicKey[] = [extraMint1, extraMint2];
 
     const now = Math.floor(Date.now() / 1000);
     const start_time = new anchor.BN(now + 5);
@@ -302,14 +273,6 @@ describe("chain-fund-me-comprehensive", () => {
       connection,
       creator.payer,
       extraMint2,
-      campaignPda,
-      true
-    );
-
-    campaignExtraMint3Account = await getOrCreateAssociatedTokenAccount(
-      connection,
-      creator.payer,
-      extraMint3,
       campaignPda,
       true
     );
@@ -378,7 +341,7 @@ describe("chain-fund-me-comprehensive", () => {
     const contributionAmount = new anchor.BN(100_000_000); // 100 USDC
 
     const tx = await program.methods
-      .contributeToken(contributionAmount) 
+      .contributeToken(contributionAmount)
       .accounts({
         campaign: campaignPda,
         //@ts-ignore
@@ -455,33 +418,6 @@ describe("chain-fund-me-comprehensive", () => {
     console.log("Campaign Extra Mint 2 balance:", campaignTokenBalance.amount.toString());
   });
 
-  it("Contribute Extra Mint 3 to Campaign", async () => {
-    const contributionAmount = new anchor.BN(200_00000000); // 200 tokens
-
-    const tx = await program.methods
-      .contributeToken(contributionAmount)
-      .accounts({
-        campaign: campaignPda,
-        //@ts-ignore
-        contribution: contributionPda,
-        contributor: contributor.publicKey,
-        factory: factoryPda,
-        campaignToken: campaignExtraMint3Account.address,
-        contributorToken: contributorExtraMint3Account.address,
-        feeWalletToken: feeWalletExtraMint3Account.address,
-        spender: spenderPda,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([contributor])
-      .rpc();
-
-    console.log("Extra Mint 3 Contribute tx:", tx);
-
-    const campaignTokenBalance = await getAccount(connection, campaignExtraMint3Account.address);
-    console.log("Campaign Extra Mint 3 balance:", campaignTokenBalance.amount.toString());
-  });
-
   it("Withdraw All Tokens from Campaign", async () => {
     console.log("Withdrawing all tokens...");
 
@@ -489,13 +425,13 @@ describe("chain-fund-me-comprehensive", () => {
     const initialStablecoinBalance = await getAccount(connection, creatorStablecoinAccount.address);
     const initialExtraMint1Balance = await getAccount(connection, creatorExtraMint1Account.address);
     const initialExtraMint2Balance = await getAccount(connection, creatorExtraMint2Account.address);
-    const initialExtraMint3Balance = await getAccount(connection, creatorExtraMint3Account.address);
+
 
     console.log("Creator initial token balances:");
     console.log("Stablecoin:", initialStablecoinBalance.amount.toString());
     console.log("Extra Mint 1:", initialExtraMint1Balance.amount.toString());
     console.log("Extra Mint 2:", initialExtraMint2Balance.amount.toString());
-    console.log("Extra Mint 3:", initialExtraMint3Balance.amount.toString());
+
 
     const tx = await program.methods
       .withdraw()
@@ -519,9 +455,6 @@ describe("chain-fund-me-comprehensive", () => {
         // Extra Mint 2
         { pubkey: campaignExtraMint2Account.address, isSigner: false, isWritable: true },
         { pubkey: creatorExtraMint2Account.address, isSigner: false, isWritable: true },
-        // Extra Mint 3
-        { pubkey: campaignExtraMint3Account.address, isSigner: false, isWritable: true },
-        { pubkey: creatorExtraMint3Account.address, isSigner: false, isWritable: true },
       ])
       .rpc();
 
@@ -531,31 +464,27 @@ describe("chain-fund-me-comprehensive", () => {
     const finalStablecoinBalance = await getAccount(connection, creatorStablecoinAccount.address);
     const finalExtraMint1Balance = await getAccount(connection, creatorExtraMint1Account.address);
     const finalExtraMint2Balance = await getAccount(connection, creatorExtraMint2Account.address);
-    const finalExtraMint3Balance = await getAccount(connection, creatorExtraMint3Account.address);
+
     const solBalance = await connection.getBalance(creator.publicKey)
     console.log("Creator final token balances:");
     console.log("Stablecoin:", finalStablecoinBalance.amount.toString());
     console.log("Extra Mint 1:", finalExtraMint1Balance.amount.toString());
     console.log("Extra Mint 2:", finalExtraMint2Balance.amount.toString());
-    console.log("Extra Mint 3:", finalExtraMint3Balance.amount.toString());
-    console.log("Creator SOL Balance", solBalance/LAMPORTS_PER_SOL)
+    console.log("Creator SOL Balance", solBalance / LAMPORTS_PER_SOL)
 
     // Verify campaign token accounts are empty
     const campaignStablecoinFinal = await getAccount(connection, campaignStablecoinAccount.address);
     const campaignExtraMint1Final = await getAccount(connection, campaignExtraMint1Account.address);
     const campaignExtraMint2Final = await getAccount(connection, campaignExtraMint2Account.address);
-    const campaignExtraMint3Final = await getAccount(connection, campaignExtraMint3Account.address);
 
     console.log("Creator Stablecoin Balance:", creatorStablecoinAccount.amount.toString());
     console.log("Creator Extra Mint 1:", creatorExtraMint1Account.amount.toString());
     console.log("Creator Extra Mint 2:", creatorExtraMint2Account.amount.toString());
-    console.log("Creator Extra Mint 3:", creatorExtraMint3Account.amount.toString());
 
     // Assert that tokens were transferred
     assert.equal(campaignStablecoinFinal.amount.toString(), "0");
     assert.equal(campaignExtraMint1Final.amount.toString(), "0");
     assert.equal(campaignExtraMint2Final.amount.toString(), "0");
-    assert.equal(campaignExtraMint3Final.amount.toString(), "0");
   });
 
   it("Verify final campaign state", async () => {

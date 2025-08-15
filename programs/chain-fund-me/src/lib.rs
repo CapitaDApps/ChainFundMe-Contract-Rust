@@ -20,6 +20,7 @@ pub mod chain_fund_me {
 
     pub fn initialize_factory(
         ctx: Context<InitializeFactory>,
+        factory_id: u64,
         platform_fee: u8,
         stablecoin_mint: Pubkey,
         fee_wallet: Pubkey,
@@ -27,6 +28,7 @@ pub mod chain_fund_me {
     ) -> Result<()> {
         process_initialize_factory(
             ctx,
+            factory_id,
             platform_fee,
             stablecoin_mint,
             fee_wallet,
