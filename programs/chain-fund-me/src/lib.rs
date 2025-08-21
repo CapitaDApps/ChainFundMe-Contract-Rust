@@ -33,11 +33,6 @@ pub mod chain_fund_me {
         process_create_campaign(ctx, start_time, end_time, metadata_uri, other_token_mints)
     }
 
-    pub fn initialize_spender(ctx: Context<InitializeSpender>)->Result<()>{
-        process_init_spender(ctx)
-    }
-
-
     pub fn contribute(ctx:Context<Contribute>, amount: u64, is_token:bool) -> Result<()> {
         process_contribute(ctx, amount, is_token)
     }
