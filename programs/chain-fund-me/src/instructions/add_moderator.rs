@@ -1,4 +1,4 @@
-use crate::{CrowdfundingError, Factory};
+use crate::{CrowdfundingError, Factory, Moderators};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -19,10 +19,13 @@ pub fn add_moderator(ctx: Context<AddModerator>, moderator: Pubkey) -> Result<()
     let exists = factory
         .moderators
         .iter()
-        .any(|(key, _)| *key == moderator);
+        .any(|m| m.moderator == moderator);
 
     if !exists {
-        factory.moderators.push((moderator, true));
+        factory.moderators.push(Moderators{
+            moderator,
+            allowed: true
+        })
     }
 
     Ok(())

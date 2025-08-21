@@ -5,6 +5,8 @@ pub use create_campaign::*;
 pub mod initialize_factory;
 pub use initialize_factory::*;
 
+pub mod initialize_spender;
+pub use initialize_spender::*;
 
 pub mod contributetoken;
 pub use contributetoken::*;
@@ -20,7 +22,6 @@ pub use withdraw::*;
 
 pub mod purchase_multiplier_tier;
 pub use purchase_multiplier_tier::*;
-
 
 pub mod initialize_points;
 pub use initialize_points::*;

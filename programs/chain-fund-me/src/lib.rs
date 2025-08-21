@@ -11,7 +11,7 @@ pub use error::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("8rL4XDygRHSE9YrpWqPpW8VfZtEZwFv7zYjrhEKguNs3");
+declare_id!("4fG2iXUACiXzGSkVptNY9hwfPThohA3yrjKpfajFCH3y");
 
 #[program]
 pub mod chain_fund_me {
@@ -39,6 +39,10 @@ pub mod chain_fund_me {
 
     pub fn contribute_token(ctx: Context<ContributeToken>, amount: u64) -> Result<()> {
         process_contribute_token(ctx, amount)
+    }
+
+    pub fn initialize_spender(ctx: Context<InitializeSpender>)->Result<()>{
+        process_initialize_spender(ctx)
     }
 
     pub fn update_campaign_time(

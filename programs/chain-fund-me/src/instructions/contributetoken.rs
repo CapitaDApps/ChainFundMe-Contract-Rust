@@ -25,7 +25,9 @@ pub struct ContributeToken<'info> {
     #[account(mut)]
     pub fee_wallet_token: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
-    #[account(mut)]
+   #[account(
+       mut
+    )]
     pub spender: Account<'info, Spender>,
     pub system_program: Program<'info, System>
 }

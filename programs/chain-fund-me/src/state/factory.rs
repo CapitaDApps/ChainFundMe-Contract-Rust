@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 
+use crate::{AcceptedToken, Moderators};
+
 #[account]
+#[derive(InitSpace)]
 pub struct Factory {
     pub factory_id: u64,
     pub owner: Pubkey,
@@ -10,8 +13,11 @@ pub struct Factory {
     pub deployed_campaigns_count: u64,
     pub limits_enabled: bool,
     pub is_paused: bool,
-    pub campaigns: Vec<(Pubkey, u64)>,
-    pub moderators: Vec<(Pubkey, bool)>,
-    pub other_accepted_tokens: Vec<(Pubkey, bool)>,
-    pub verified_creators: Vec<(Pubkey, bool)>,
+
+    #[max_len(5)]
+    pub moderators: Vec<Moderators>,
+    #[max_len(5)]
+    pub other_accepted_tokens: Vec<AcceptedToken>,
+
+    // pub verified_creators: Vec<(Pubkey, bool)>,
 }

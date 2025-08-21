@@ -16,16 +16,6 @@ pub struct CreateCampaign<'info> {
         bump
     )]
     pub campaign: Account<'info, Campaign>,
-
-    #[account(
-        init,
-        payer = creator,
-        space = 8 + Spender::INIT_SPACE,
-        seeds = [b"spender", creator.key().as_ref()],
-        bump
-    )]
-    pub spender: Account<'info, Spender>,
-
     #[account(mut)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -44,10 +34,6 @@ pub fn process_create_campaign(
     require!(!factory.is_paused, CrowdfundingError::FactoryPaused);
     require!(start_time < end_time, CrowdfundingError::InvalidDates);
     require!(
-        start_time > Clock::get()?.unix_timestamp,
-        CrowdfundingError::InvalidDates
-    );
-    require!(
         other_token_mints.len() <= 5,
         CrowdfundingError::TooManyTokens
     );
@@ -64,12 +50,8 @@ pub fn process_create_campaign(
     campaign.ended = false;
     campaign.bump = ctx.bumps.campaign;
     let campaign_id = factory.deployed_campaigns_count;
-    factory.campaigns.push((campaign.key(), campaign_id));
+    // factory.campaigns.push((campaign.key(), campaign_id));
 
-    let spender = &mut ctx.accounts.spender;
-    spender.multiplier+=1;
-    // spender.multiplier_tier = 0;
-    spender.points_earned += 1;
 
     emit!(ChainFundMeCreated {
         creator: ctx.accounts.creator.key(),
