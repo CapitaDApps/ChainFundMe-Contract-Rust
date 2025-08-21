@@ -66,6 +66,11 @@ pub fn process_create_campaign(
     let campaign_id = factory.deployed_campaigns_count;
     factory.campaigns.push((campaign.key(), campaign_id));
 
+    let spender = &mut ctx.accounts.spender;
+    spender.multiplier+=1;
+    // spender.multiplier_tier = 0;
+    spender.points_earned += 1;
+
     emit!(ChainFundMeCreated {
         creator: ctx.accounts.creator.key(),
         campaign: campaign.key(),

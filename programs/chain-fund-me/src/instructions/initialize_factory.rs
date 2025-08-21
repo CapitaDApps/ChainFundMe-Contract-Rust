@@ -4,12 +4,13 @@ use crate::{AcceptedToken, Factory};
 
 
 #[derive(Accounts)]
+#[instruction(factory_id: u64)]
 pub struct InitializeFactory<'info> {
     #[account(
         init_if_needed,
         payer = owner,
         space = 8 + 32 + 1 + 32 + 32 + 8 + 1 + 1 + 1024,
-        seeds = [b"factory"],
+        seeds = [b"factory", factory_id.to_le_bytes().as_ref()],
         bump
     )]
     pub factory: Account<'info, Factory>,
@@ -20,12 +21,14 @@ pub struct InitializeFactory<'info> {
 
    pub fn process_initialize_factory(
         ctx: Context<InitializeFactory>,
+        factory_id: u64,
         platform_fee: u8,
         stablecoin_mint: Pubkey,
         fee_wallet: Pubkey,
         other_accepted_tokens: Vec<AcceptedToken>
     ) -> Result<()> {
         let factory = &mut ctx.accounts.factory;
+        factory.factory_id = factory_id;
         factory.owner = ctx.accounts.owner.key();
         factory.platform_fee = platform_fee;
         factory.stablecoin_mint = stablecoin_mint;

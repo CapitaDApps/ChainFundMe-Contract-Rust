@@ -48,6 +48,11 @@ pub enum CrowdfundingError {
     #[msg("Campaign already approved")]
     AlreadyApproved,
     #[msg("Accounts provided do not match expected format")]
-    InvalidAccounts
+    InvalidAccounts,
+    #[msg("Overflow error")]
+    Overflow,
+    #[msg("Insufficient funds for operation")]
+    InsufficientFunds,
+
 
 }
