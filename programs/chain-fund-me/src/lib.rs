@@ -18,8 +18,8 @@ pub mod chain_fund_me {
 
     use super::*;
 
-    pub fn initialize_factory(ctx: Context<InitializeFactory>, platform_fee:u8, stablecoin_mint: Pubkey, fee_wallet: Pubkey) -> Result<()> {
-        process_initialize_factory(ctx, platform_fee, stablecoin_mint, fee_wallet)
+    pub fn initialize_factory(ctx: Context<InitializeFactory>, platform_fee:u8, stablecoin_mint: Pubkey, fee_wallet: Pubkey, other_accepted_tokens: Vec<AcceptedToken>) -> Result<()> {
+        process_initialize_factory(ctx, platform_fee, stablecoin_mint, fee_wallet, other_accepted_tokens)
     }
     
     pub fn create_campaign(
@@ -55,10 +55,9 @@ pub mod chain_fund_me {
     }   
 
 
-    pub fn withdraw(ctx: Context<Withdraw>, is_token:bool)-> Result<()>{
-        process_withdraw(ctx, is_token)
+pub fn withdraw<'info>(ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>) -> Result<()> {
+        process_withdraw(ctx)
     }
-
 
 }
 

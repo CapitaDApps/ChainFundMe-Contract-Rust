@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::Factory;
+use crate::{AcceptedToken, Factory};
 
 
 #[derive(Accounts)]
@@ -23,6 +23,7 @@ pub struct InitializeFactory<'info> {
         platform_fee: u8,
         stablecoin_mint: Pubkey,
         fee_wallet: Pubkey,
+        other_accepted_tokens: Vec<AcceptedToken>
     ) -> Result<()> {
         let factory = &mut ctx.accounts.factory;
         factory.owner = ctx.accounts.owner.key();
@@ -32,7 +33,12 @@ pub struct InitializeFactory<'info> {
         factory.deployed_campaigns_count = 0;
         factory.limits_enabled = false;
         factory.is_paused = false;
+
+        factory.other_accepted_tokens = other_accepted_tokens
+        .into_iter()
+        .map(|t| (t.mint, t.allowed))
+        .collect();
         Ok(())
     }
 
-// I wanna see project
+
