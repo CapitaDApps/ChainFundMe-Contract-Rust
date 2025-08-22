@@ -232,7 +232,23 @@ describe("chain-fund-me-comprehensive", () => {
         20, // 2% platform fee
         stablecoinMint,
         feeWallet.publicKey,
-        [] // No other accepted tokens for now
+        [{
+          mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          allowed: true
+        },
+        {
+          mint: "So11111111111111111111111111111111111111111",
+          allowed: true
+        },
+        {
+          mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+          allowed: true
+        },
+        {
+          mint: "GhE4sh64jawtzUmeQWRgkN3XrzcWN4pib5g5RcKMbonk",
+          allowed: true
+        },
+      ] 
       )
       .accounts({
         owner: creator.publicKey,
