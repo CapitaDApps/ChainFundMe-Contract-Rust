@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{CrowdfundingError};
+use crate::{AcceptedToken, CrowdfundingError};
 use crate::state::Factory;
 
 #[derive(Accounts)]
@@ -22,11 +22,14 @@ pub fn set_acceptable_token(
     );
 
     if accepted {
-        if !factory.other_accepted_tokens.iter().any(|(mint, _)| *mint == token_mint) {
-            factory.other_accepted_tokens.push((token_mint, true));
+        if !factory.other_accepted_tokens.iter().any(|mint| mint.mint == token_mint) {
+            factory.other_accepted_tokens.push(AcceptedToken {
+                mint: token_mint,
+                allowed: true,
+            });
         }
     } else {
-        factory.other_accepted_tokens.retain(|(mint, _)| *mint != token_mint);
+        factory.other_accepted_tokens.retain(|mint| mint.mint != token_mint);
     }
 
     Ok(())

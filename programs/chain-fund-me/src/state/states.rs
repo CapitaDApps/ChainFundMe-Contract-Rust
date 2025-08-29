@@ -10,11 +10,32 @@ pub struct Contribution {
     pub token_amount: u64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
 pub struct AcceptedToken {
     pub mint: Pubkey,
     pub allowed: bool,
 }
+
+// #[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
+// pub struct VerifiedCreators {
+//     pub creator: Pubkey,
+//     pub allowed: bool
+// }
+
+// #[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
+// pub struct Campaigns {
+//     pub campaign: Pubkey,
+//     pub campaign_id: u64,
+// }
+
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
+pub struct Moderators {
+    pub moderator: Pubkey,
+    pub allowed: bool
+}
+
+
 
 #[account]
 pub struct Points {

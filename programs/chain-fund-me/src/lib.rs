@@ -11,7 +11,7 @@ pub use error::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("8rL4XDygRHSE9YrpWqPpW8VfZtEZwFv7zYjrhEKguNs3");
+declare_id!("Ej3tE117rHTNG6rJwrikXB45XXYJefiBUJMmv5GqmeNQ");
 
 #[program]
 pub mod chain_fund_me {
@@ -63,8 +63,8 @@ pub mod chain_fund_me {
         process_update_campaign_time(ctx, start_time, end_time)
     }
 
-    pub fn pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
-        process_pause_campaign(ctx, paused)
+    pub fn pause_campaign(ctx: Context<PauseCampaign>, paused: bool, campaign_id:u64) -> Result<()> {
+        process_pause_campaign(ctx, paused, campaign_id)
     }
 
     pub fn withdraw<'info>(ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>) -> Result<()> {

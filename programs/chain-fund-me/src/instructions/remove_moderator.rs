@@ -16,7 +16,7 @@ pub fn remove_moderator(ctx: Context<RemoveModerator>, moderator: Pubkey) -> Res
         CrowdfundingError::NotFactoryOwner
     );
 
-    factory.moderators.retain(|(key, _)| *key != moderator);
+    factory.moderators.retain(|key| key.moderator != moderator);
 
     Ok(())
 }

@@ -25,8 +25,8 @@ pub struct ContributeToken<'info> {
     #[account(mut)]
     pub fee_wallet_token: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
-    #[account(mut)]
-    pub spender: Account<'info, Spender>,
+    // #[account(mut)]
+    // pub spender: Account<'info, Spender>,
     pub system_program: Program<'info, System>
 }
 
@@ -79,9 +79,9 @@ pub fn process_contribute_token(ctx: Context<ContributeToken>, amount: u64) -> R
         amount,
     });
 
-    let points = amount;
-    let multiplier = ctx.accounts.spender.multiplier;
-    ctx.accounts.spender.points_earned += points * multiplier as u64;
+    // let points = amount;
+    // let multiplier = ctx.accounts.spender.multiplier;
+    // ctx.accounts.spender.points_earned += points * multiplier as u64;
 
     emit!(Deposited {
         funder: ctx.accounts.contributor.key(),

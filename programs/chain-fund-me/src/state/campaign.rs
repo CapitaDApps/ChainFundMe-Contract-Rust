@@ -5,6 +5,7 @@ use crate::Funder;
 
 #[account]
 pub struct Campaign {
+    pub campaign_id: u64,
     pub owner: Pubkey,
     pub start_time: i64,
     pub end_time: i64,

@@ -3,7 +3,7 @@ use anchor_spl::token::Transfer;
 use anchor_spl::token::{self, Token, TokenAccount};
 use anchor_lang::system_program;
 
-use crate::{Campaign, CrowdfundingError, Factory, Spender, BASE_POINTS};
+use crate::{Campaign, CrowdfundingError, Factory, Spender, Withdrawal, BASE_POINTS};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
@@ -18,8 +18,8 @@ pub struct Withdraw<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
     pub token_program: Program<'info, Token>,
-    #[account(mut)]
-    pub spender: Account<'info, Spender>,
+    // #[account(mut)]
+    // pub spender: Account<'info, Spender>,
     pub system_program: Program<'info, System>,
 }
 
@@ -117,10 +117,13 @@ pub fn process_withdraw<'info>(
 
 
 
-    if !ctx.accounts.campaign.is_withdrawal_points_minted {
-        ctx.accounts.spender.points_earned += BASE_POINTS;
-        ctx.accounts.campaign.is_withdrawal_points_minted = true;
-    }
+    // if !ctx.accounts.campaign.is_withdrawal_points_minted {
+    //     ctx.accounts.spender.points_earned += BASE_POINTS;
+    //     ctx.accounts.campaign.is_withdrawal_points_minted = true;
+    // }
+    emit!(Withdrawal{
+        withdraw_pubkey: ctx.accounts.campaign.owner.key()
+    });
 
     Ok(())
 }

@@ -25,3 +25,9 @@ pub struct PurchasedMultiplier {
     pub price_paid: u64,
     pub multiplier: u32,
 }
+
+#[event]
+pub struct Withdrawal {
+    pub withdraw_pubkey: Pubkey,
+    
+}

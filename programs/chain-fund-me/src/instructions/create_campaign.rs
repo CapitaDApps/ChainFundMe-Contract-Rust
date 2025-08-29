@@ -17,15 +17,14 @@ pub struct CreateCampaign<'info> {
     )]
     pub campaign: Account<'info, Campaign>,
 
-    #[account(
-        init,
-        payer = creator,
-        space = 8 + Spender::INIT_SPACE,
-        seeds = [b"spender", creator.key().as_ref()],
-        bump
-    )]
-    pub spender: Account<'info, Spender>,
-
+    // #[account(
+    //     init,
+    //     payer = creator,
+    //     space = 8 + Spender::INIT_SPACE,
+    //     seeds = [b"spender", creator.key().as_ref()],
+    //     bump
+    // )]
+    // pub spender: Account<'info, Spender>,
     #[account(mut)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -40,6 +39,7 @@ pub fn process_create_campaign(
 ) -> Result<()> {
     let factory = &mut ctx.accounts.factory;
     let campaign = &mut ctx.accounts.campaign;
+    let campaign_id = factory.deployed_campaigns_count;
 
     require!(!factory.is_paused, CrowdfundingError::FactoryPaused);
     require!(start_time < end_time, CrowdfundingError::InvalidDates);
@@ -51,7 +51,7 @@ pub fn process_create_campaign(
         other_token_mints.len() <= 5,
         CrowdfundingError::TooManyTokens
     );
-
+    campaign.campaign_id = campaign_id;
     campaign.owner = ctx.accounts.creator.key();
     campaign.start_time = start_time;
     campaign.end_time = end_time;
@@ -63,19 +63,21 @@ pub fn process_create_campaign(
     campaign.is_paused = false;
     campaign.ended = false;
     campaign.bump = ctx.bumps.campaign;
-    let campaign_id = factory.deployed_campaigns_count;
-    factory.campaigns.push((campaign.key(), campaign_id));
 
-    let spender = &mut ctx.accounts.spender;
-    spender.multiplier+=1;
-    // spender.multiplier_tier = 0;
-    spender.points_earned += 1;
+    //     factory.campaigns.push(Campaigns {
+    //     campaign: campaign.key(),
+    //     campaign_id,
+    // });
+
+    // let spender = &mut ctx.accounts.spender;
+    // spender.multiplier+=1;
+    // // spender.multiplier_tier = 0;
+    // spender.points_earned += 1;
 
     emit!(ChainFundMeCreated {
         creator: ctx.accounts.creator.key(),
         campaign: campaign.key(),
     });
-    
 
     Ok(())
 }

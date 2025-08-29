@@ -5,6 +5,8 @@ pub use create_campaign::*;
 pub mod initialize_factory;
 pub use initialize_factory::*;
 
+// pub mod initialize_spender;
+// pub use initialize_spender::*;
 
 pub mod contributetoken;
 pub use contributetoken::*;

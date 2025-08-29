@@ -14,7 +14,11 @@ pub fn approve_withdraw(ctx: Context<ApproveWithdraw>) -> Result<()> {
     let campaign = &mut ctx.accounts.campaign;
     let factory = &ctx.accounts.factory;
     let signer = ctx.accounts.moderator.key();
-    let is_moderator = factory.moderators.iter().any(|(k, v)| *k == signer && *v);
+    let is_moderator = factory
+    .moderators
+    .iter()
+    .any(|m| m.moderator == signer);
+
     require!(is_moderator, CrowdfundingError::NotModerator);
 
     require!(

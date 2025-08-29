@@ -10,13 +10,13 @@ pub struct PauseCampaign<'info> {
     pub moderator: Signer<'info>,
 }
 
-pub fn process_pause_campaign(ctx: Context<PauseCampaign>, paused: bool) -> Result<()> {
+pub fn process_pause_campaign(ctx: Context<PauseCampaign>, paused: bool, campaign_id: u64) -> Result<()> {
     let factory = &ctx.accounts.factory;
 
     let is_moderator = factory
-        .moderators
-        .iter()
-        .any(|(key, active)| *key == ctx.accounts.moderator.key() && *active);
+    .moderators
+    .iter()
+    .any(|m| m.moderator == ctx.accounts.moderator.key());
 
     require!(is_moderator, CrowdfundingError::NotModerator);
 

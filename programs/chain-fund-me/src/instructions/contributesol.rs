@@ -22,8 +22,8 @@ pub struct ContributeSol<'info> {
     #[account(mut)]
     pub fee_wallet: AccountInfo<'info>,
     pub system_program: Program<'info, System>,
-    #[account(mut)]
-    pub spender: Account<'info, Spender>,
+    // #[account(mut)]
+    // pub spender: Account<'info, Spender>,
 }
 
 pub fn process_contribute_sol(ctx: Context<ContributeSol>, amount: u64) -> Result<()> {
@@ -73,9 +73,9 @@ pub fn process_contribute_sol(ctx: Context<ContributeSol>, amount: u64) -> Resul
         amount,
     });
 
-    let points = amount;
-    let multiplier = ctx.accounts.spender.multiplier;
-    ctx.accounts.spender.points_earned += points * multiplier as u64;
+    // let points = amount;
+    // let multiplier = ctx.accounts.spender.multiplier;
+    // ctx.accounts.spender.points_earned += points * multiplier as u64;
 
     emit!(Deposited {
         funder: ctx.accounts.contributor.key(),
