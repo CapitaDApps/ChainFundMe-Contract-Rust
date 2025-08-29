@@ -29,53 +29,48 @@ pub fn process_withdraw<'info>(
     let owner_key = ctx.accounts.owner.key();
     
     let start_time_bytes = ctx.accounts.campaign.start_time.to_le_bytes();
-    let campaign = &mut ctx.accounts.campaign;
+    let campaign_bump = ctx.accounts.campaign.bump;
+    let is_paused = ctx.accounts.campaign.is_paused;
+    let is_withdraw_approved = ctx.accounts.campaign.is_withdraw_approved;
+    let withdrawal_approval_revoked = ctx.accounts.campaign.withdrawal_approval_revoked;
+    let campaign_key = ctx.accounts.campaign.key();
+    
     let factory = &ctx.accounts.factory;
 
-    // Pause check
-    require!(!campaign.is_paused, CrowdfundingError::CampaignPaused);
+    require!(!is_paused, CrowdfundingError::CampaignPaused);
 
-    // Withdrawal approval checks
     if factory.limits_enabled {
-        require!(campaign.is_withdraw_approved, CrowdfundingError::WithdrawalNotApproved);
-        require!(!campaign.withdrawal_approval_revoked, CrowdfundingError::WithdrawalNotApproved);
-    }
-    let balance = campaign.to_account_info().lamports();
-    
-    // Preserve rent-exempt minimum
-    let rent = Rent::get()?;
-    let min_balance = rent.minimum_balance(campaign.to_account_info().data_len());
-    let withdrawable_balance = balance.saturating_sub(min_balance);
-    
-    if withdrawable_balance > 0 {
-        **campaign.to_account_info().try_borrow_mut_lamports()? -= withdrawable_balance;
-        **ctx.accounts.owner.to_account_info().try_borrow_mut_lamports()? += withdrawable_balance;
+        require!(is_withdraw_approved, CrowdfundingError::WithdrawalNotApproved);
+        require!(!withdrawal_approval_revoked, CrowdfundingError::WithdrawalNotApproved);
     }
 
-    //
-    // 2. Withdraw SPL tokens (if any)
-    //
     require!(
         ctx.remaining_accounts.len() % 2 == 0,
         CrowdfundingError::InvalidAccounts
     );
 
-    // Use chunks to handle the lifetime properly
+
     for chunk in ctx.remaining_accounts.chunks_exact(2) {
         let campaign_token_info = &chunk[0];
         let owner_token_info = &chunk[1];
         
-        // Deserialize token accounts
+
         let campaign_token = TokenAccount::try_deserialize(&mut &campaign_token_info.data.borrow()[..])?;
         let owner_token = TokenAccount::try_deserialize(&mut &owner_token_info.data.borrow()[..])?;
         
-        // Validate token account ownership
+
         require!(
-            campaign_token.owner == campaign.key(),
+            campaign_token.owner == campaign_key,
             CrowdfundingError::InvalidAccounts
         );
         require!(
             owner_token.owner == ctx.accounts.owner.key(),
+            CrowdfundingError::InvalidAccounts
+        );
+        
+
+        require!(
+            campaign_token.mint == owner_token.mint,
             CrowdfundingError::InvalidAccounts
         );
         
@@ -85,14 +80,14 @@ pub fn process_withdraw<'info>(
             let cpi_accounts = Transfer {
                 from: campaign_token_info.clone(),
                 to: owner_token_info.clone(),
-                authority: campaign.to_account_info(),
+                authority: ctx.accounts.campaign.to_account_info(),
             };
 
             let seeds = &[
                 b"campaign",
                 owner_key.as_ref(),
                 &start_time_bytes,
-                &[campaign.bump],
+                &[campaign_bump],
             ];
             let signer = &[&seeds[..]];
 
@@ -126,7 +121,6 @@ pub fn process_withdraw<'info>(
     //     ctx.accounts.spender.points_earned += BASE_POINTS;
     //     ctx.accounts.campaign.is_withdrawal_points_minted = true;
     // }
-
     emit!(Withdrawal{
         withdraw_pubkey: ctx.accounts.campaign.owner.key()
     });

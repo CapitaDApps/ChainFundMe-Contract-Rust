@@ -29,10 +29,7 @@ describe("chain-fund-me-comprehensive", () => {
   let stablecoinMint: PublicKey;
   let extraMint1: PublicKey; // e.g., USDT
   let extraMint2: PublicKey; // e.g., USDC
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/main
 
   // Token accounts for stablecoin
   let campaignStablecoinAccount: any;
@@ -51,49 +48,23 @@ describe("chain-fund-me-comprehensive", () => {
   let feeWalletExtraMint2Account: any;
   let contributorExtraMint2Account: any;
   let creatorExtraMint2Account: any;
-
   let campaignPda: PublicKey;
   let contributionPda: PublicKey;
   // let spenderPda: PublicKey;
   let factoryPda: PublicKey;
+  let factoryId = 1
 
   const program = anchor.workspace.ChainFundMe as Program<ChainFundMe>;
-  let factoryId = 1;
-  let start_time: anchor.BN;
-  let end_time: anchor.BN;
 
   before(async () => {
-    // Calculate timing - start well in the past to avoid any clock differences
-    const now = Math.floor(Date.now() / 1000);
-    start_time = new anchor.BN(now);
-    end_time = new anchor.BN(now + 3600);
-
     // Find factory PDA
     [factoryPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("factory"), new anchor.BN(factoryId).toArrayLike(Buffer, "le", 8)],
+      [Buffer.from("factory"),
+      new anchor.BN(factoryId).toArrayLike(Buffer, "le", 8)],
       program.programId
     );
 
-    [spenderPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("spender"), contributor.publicKey.toBuffer()],
-      program.programId
-    );
-    [campaignPda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("campaign"),
-        creator.publicKey.toBuffer(),
-        start_time.toArrayLike(Buffer, "le", 8),
-      ],
-      program.programId
-    );
-    [contributionPda] = PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("contribution"),
-        contributor.publicKey.toBuffer(),
-        campaignPda.toBuffer(),
-      ],
-      program.programId
-    );
+    // Create all token mints
     stablecoinMint = await createMint(
       connection,
       creator.payer,
@@ -108,7 +79,7 @@ describe("chain-fund-me-comprehensive", () => {
       creator.payer,
       creator.publicKey,
       null,
-      6 
+      6 // USDT decimals
     );
     console.log("Extra mint 1 (USDT):", extraMint1.toBase58());
 
@@ -120,7 +91,6 @@ describe("chain-fund-me-comprehensive", () => {
       9 // SOL-like decimals
     );
     console.log("Extra mint 2 (Custom Token A):", extraMint2.toBase58());
-
     // Create token accounts for all participants for stablecoin
     contributorStablecoinAccount = await getOrCreateAssociatedTokenAccount(
       connection,
@@ -194,7 +164,7 @@ describe("chain-fund-me-comprehensive", () => {
       stablecoinMint,
       contributorStablecoinAccount.address,
       creator.publicKey,
-      1_000_000_000
+      1_000_000_000 // 1000 USDC
     );
 
     await mintTo(
@@ -203,7 +173,7 @@ describe("chain-fund-me-comprehensive", () => {
       extraMint1,
       contributorExtraMint1Account.address,
       creator.publicKey,
-      500_000_000
+      500_000_000 // 500 USDT
     );
 
     await mintTo(
@@ -212,9 +182,8 @@ describe("chain-fund-me-comprehensive", () => {
       extraMint2,
       contributorExtraMint2Account.address,
       creator.publicKey,
-      2_000_000_000
+      2_000_000_000 // 2 Custom Token A
     );
-
     console.log("All token mints and accounts created successfully");
   });
 
@@ -232,27 +201,28 @@ describe("chain-fund-me-comprehensive", () => {
   it("Initialize factory", async () => {
     const tx = await program.methods
       .initializeFactory(
-        new anchor.BN(1),
+        new anchor.BN(factoryId),
         20, // 2% platform fee
         stablecoinMint,
         feeWallet.publicKey,
-        [{
-          mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-          allowed: true
-        },
-        {
-          mint: "So11111111111111111111111111111111111111111",
-          allowed: true
-        },
-        {
-          mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-          allowed: true
-        },
-        {
-          mint: "GhE4sh64jawtzUmeQWRgkN3XrzcWN4pib5g5RcKMbonk",
-          allowed: true
-        },
-      ] 
+        [
+          {
+            mint: new PublicKey("So11111111111111111111111111111111111111112"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("GhE4sh64jawtzUmeQWRgkN3XrzcWN4pib5g5RcKMbonk"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+            allowed: true,
+          },
+          {
+            mint: new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"),
+            allowed: true,
+          },
+        ]
       )
       .accounts({
         owner: creator.publicKey,
@@ -267,6 +237,20 @@ describe("chain-fund-me-comprehensive", () => {
   it("Create Campaign with multiple token mints", async () => {
     const metadata_uri = "https://example.com/multi_token_campaign.json";
     const other_token_mints: PublicKey[] = [extraMint1, extraMint2];
+
+    const now = Math.floor(Date.now() / 1000);
+    const start_time = new anchor.BN(now + 5);
+    const end_time = new anchor.BN(now + 3600); // 1 hour from now
+
+    // Generate campaign PDA
+    [campaignPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("campaign"),
+        creator.publicKey.toBuffer(),
+        start_time.toArrayLike(Buffer, "le", 8),
+      ],
+      program.programId
+    );
 
     // Create campaign token accounts for all supported mints
     campaignStablecoinAccount = await getOrCreateAssociatedTokenAccount(
@@ -293,7 +277,6 @@ describe("chain-fund-me-comprehensive", () => {
       true
     );
 
-<<<<<<< HEAD
     // Generate other PDAs
     [contributionPda] = PublicKey.findProgramAddressSync(
       [
@@ -309,18 +292,13 @@ describe("chain-fund-me-comprehensive", () => {
     //   program.programId
     // );
 
-=======
->>>>>>> origin/main
     const tx = await program.methods
       .createCampaign(start_time, end_time, metadata_uri, other_token_mints)
       .accounts({
         factory: factoryPda,
         creator: creator.publicKey,
         //@ts-ignore
-<<<<<<< HEAD
         // spender: spenderPda,
-=======
->>>>>>> origin/main
         campaign: campaignPda,
         systemProgram: SystemProgram.programId,
       })
@@ -328,40 +306,9 @@ describe("chain-fund-me-comprehensive", () => {
 
     console.log("Create Campaign tx:", tx);
     console.log("Campaign created with PDA:", campaignPda.toBase58());
+
+    await new Promise((res) => setTimeout(res, 6000));
   });
-
-  it("Initialize Spender", async () => {
-    const tx = await program.methods
-      .initializeSpender() // Rust instruction
-      .accounts({
-        spender: spenderPda,
-        contributor: contributor.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([contributor])
-      .rpc();
-
-    console.log("Initialize Spender tx:", tx);
-  });
-
-  it("Verify campaign timing and start contributions", async () => {
-    const campaignAccount = await program.account.campaign.fetch(campaignPda);
-    const currentTime = Math.floor(Date.now() / 1000);
-
-    console.log("Current time:", currentTime);
-    console.log("Campaign start time:", campaignAccount.startTime.toString());
-    console.log("Campaign end time:", campaignAccount.endTime.toString());
-    console.log("Campaign has started:", currentTime >= campaignAccount.startTime.toNumber());
-    console.log("Time difference:", currentTime - campaignAccount.startTime.toNumber(), "seconds");
-
-    // Ensure campaign has started with a good margin
-    assert.isTrue(currentTime >= campaignAccount.startTime.toNumber(), "Campaign should have started");
-
-    // Additional wait to ensure any clock synchronization issues are resolved
-    console.log("Waiting additional 3 seconds for clock sync...");
-    await new Promise((resolve) => setTimeout(resolve, 10000));
-  });
-
 
   it("Contribute SOL to Campaign", async () => {
     const contributionAmount = new anchor.BN(0.5 * LAMPORTS_PER_SOL); // 0.5 SOL
@@ -400,15 +347,11 @@ describe("chain-fund-me-comprehensive", () => {
         //@ts-ignore
         contribution: contributionPda,
         contributor: contributor.publicKey,
-        contributorToken: contributorStablecoinAccount.address,
-<<<<<<< HEAD
-        // spender: spenderPda,
-=======
         factory: factoryPda,
-        feeWalletToken: feeWalletStablecoinAccount.address, // Fixed: was missing feeWalletToken
+        feeWalletToken: feeWalletStablecoinAccount.address,
         campaignToken: campaignStablecoinAccount.address,
-        spender: spenderPda,
->>>>>>> origin/main
+        contributorToken: contributorStablecoinAccount.address,
+        // spender: spenderPda,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
@@ -431,20 +374,15 @@ describe("chain-fund-me-comprehensive", () => {
         //@ts-ignore
         contribution: contributionPda,
         contributor: contributor.publicKey,
-        contributorToken: contributorExtraMint1Account.address,
         factory: factoryPda,
         feeWalletToken: feeWalletExtraMint1Account.address,
-<<<<<<< HEAD
         contributorToken: contributorExtraMint1Account.address,
         // spender: spenderPda,
-=======
-        campaignToken: campaignExtraMint1Account.address, // Fixed: was pointing to creator account
-        spender: spenderPda,
->>>>>>> origin/main
         tokenProgram: TOKEN_PROGRAM_ID,
+        campaignToken: campaignExtraMint1Account.address,
         systemProgram: SystemProgram.programId,
       })
-      .signers([contributor]) // Fixed: added signers back
+      .signers([contributor])
       .rpc();
 
     console.log("Extra Mint 1 Contribute tx:", tx);
@@ -462,58 +400,22 @@ describe("chain-fund-me-comprehensive", () => {
         campaign: campaignPda,
         //@ts-ignore
         contribution: contributionPda,
-        contributor: contributor.publicKey, // Fixed: was just contributor instead of contributor.publicKey
-        contributorToken: contributorExtraMint2Account.address,
+        contributor: contributor.publicKey,
         factory: factoryPda,
         feeWalletToken: feeWalletExtraMint2Account.address,
-<<<<<<< HEAD
         // spender: spenderPda,
         contributorToken: contributorExtraMint2Account.address,
         campaignToken: campaignExtraMint2Account.address,
-=======
-        campaignToken: campaignExtraMint2Account.address, // Fixed: was pointing to creator account
-        spender: spenderPda,
->>>>>>> origin/main
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      .signers([contributor]) // Fixed: added signers back
+      .signers([contributor])
       .rpc();
 
     console.log("Extra Mint 2 Contribute tx:", tx);
 
     const campaignTokenBalance = await getAccount(connection, campaignExtraMint2Account.address);
     console.log("Campaign Extra Mint 2 balance:", campaignTokenBalance.amount.toString());
-  });
-
-  it("Withdraw SOL from Campaign", async () => {
-    const campaignAccount = await program.account.campaign.fetch(campaignPda);
-    const startTimeBn = campaignAccount.startTime;
-
-    console.log("Withdrawing SOL...");
-    const initialCreatorBalance = await connection.getBalance(creator.publicKey);
-    const initialCampaignBalance = await connection.getBalance(campaignPda);
-
-    const tx = await program.methods
-      .withdraw()
-      .accounts({
-        factory: factoryPda,
-        //@ts-ignore
-        campaign: campaignPda,
-        owner: creator.publicKey,
-        spender: spenderPda,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
-
-    console.log("SOL Withdraw tx:", tx);
-
-    const finalCreatorBalance = await connection.getBalance(creator.publicKey);
-    const finalCampaignBalance = await connection.getBalance(campaignPda);
-
-    console.log("Creator SOL balance change:", (finalCreatorBalance - initialCreatorBalance) / LAMPORTS_PER_SOL, "SOL");
-    console.log("Campaign SOL balance after:", finalCampaignBalance / LAMPORTS_PER_SOL, "SOL");
   });
 
   it("Withdraw All Tokens from Campaign", async () => {
@@ -524,10 +426,12 @@ describe("chain-fund-me-comprehensive", () => {
     const initialExtraMint1Balance = await getAccount(connection, creatorExtraMint1Account.address);
     const initialExtraMint2Balance = await getAccount(connection, creatorExtraMint2Account.address);
 
+
     console.log("Creator initial token balances:");
     console.log("Stablecoin:", initialStablecoinBalance.amount.toString());
     console.log("Extra Mint 1:", initialExtraMint1Balance.amount.toString());
     console.log("Extra Mint 2:", initialExtraMint2Balance.amount.toString());
+
 
     const tx = await program.methods
       .withdraw()
@@ -561,20 +465,21 @@ describe("chain-fund-me-comprehensive", () => {
     const finalExtraMint1Balance = await getAccount(connection, creatorExtraMint1Account.address);
     const finalExtraMint2Balance = await getAccount(connection, creatorExtraMint2Account.address);
 
+    const solBalance = await connection.getBalance(creator.publicKey)
     console.log("Creator final token balances:");
     console.log("Stablecoin:", finalStablecoinBalance.amount.toString());
     console.log("Extra Mint 1:", finalExtraMint1Balance.amount.toString());
     console.log("Extra Mint 2:", finalExtraMint2Balance.amount.toString());
+    console.log("Creator SOL Balance", solBalance / LAMPORTS_PER_SOL)
 
     // Verify campaign token accounts are empty
     const campaignStablecoinFinal = await getAccount(connection, campaignStablecoinAccount.address);
     const campaignExtraMint1Final = await getAccount(connection, campaignExtraMint1Account.address);
     const campaignExtraMint2Final = await getAccount(connection, campaignExtraMint2Account.address);
 
-    console.log("Campaign final token balances (should be 0):");
-    console.log("Stablecoin:", campaignStablecoinFinal.amount.toString());
-    console.log("Extra Mint 1:", campaignExtraMint1Final.amount.toString());
-    console.log("Extra Mint 2:", campaignExtraMint2Final.amount.toString());
+    console.log("Creator Stablecoin Balance:", creatorStablecoinAccount.amount.toString());
+    console.log("Creator Extra Mint 1:", creatorExtraMint1Account.amount.toString());
+    console.log("Creator Extra Mint 2:", creatorExtraMint2Account.amount.toString());
 
     // Assert that tokens were transferred
     assert.equal(campaignStablecoinFinal.amount.toString(), "0");
@@ -590,6 +495,7 @@ describe("chain-fund-me-comprehensive", () => {
     console.log("- Is withdrawal points minted:", campaignAccount.isWithdrawalPointsMinted);
     console.log("- Campaign paused:", campaignAccount.isPaused);
 
+    console.log("Final Spender State:");
     // console.log("- Points earned:", spenderAccount.pointsEarned.toString());
 
     // Verify withdrawal points were awarded
