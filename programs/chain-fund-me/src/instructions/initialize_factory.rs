@@ -41,7 +41,6 @@ pub fn process_initialize_factory(
         .map(|t| AcceptedToken {
             mint: t.mint,
             allowed: t.allowed,
-        })
-        .collect();
+        }).collect();
     Ok(())
 }

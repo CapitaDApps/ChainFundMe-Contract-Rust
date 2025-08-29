@@ -29,13 +29,6 @@ pub struct AcceptedToken {
 // }
 
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
-pub struct Moderators {
-    pub moderator: Pubkey,
-    pub allowed: bool
-}
-
-
 
 #[account]
 pub struct Points {
@@ -53,6 +46,13 @@ pub struct Spender {
     pub points_earned: u64,
 }
 
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
+pub struct Moderators {
+    pub moderator: Pubkey,
+    pub allowed: bool
+}
+
 #[account]
 pub struct Funder {
     pub funder_address: Pubkey,
@@ -68,8 +68,8 @@ pub struct Funder {
     PartialEq,
     Eq,
     Hash,
-    PartialOrd,  // ✅ Add this
-    Ord          // ✅ And this
+    PartialOrd,  
+    Ord          
 )]
 pub enum MultiplierTier {
     Base,

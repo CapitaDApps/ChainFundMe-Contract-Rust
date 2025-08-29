@@ -44,10 +44,6 @@ pub fn process_create_campaign(
     require!(!factory.is_paused, CrowdfundingError::FactoryPaused);
     require!(start_time < end_time, CrowdfundingError::InvalidDates);
     require!(
-        start_time > Clock::get()?.unix_timestamp,
-        CrowdfundingError::InvalidDates
-    );
-    require!(
         other_token_mints.len() <= 5,
         CrowdfundingError::TooManyTokens
     );
@@ -69,10 +65,6 @@ pub fn process_create_campaign(
     //     campaign_id,
     // });
 
-    // let spender = &mut ctx.accounts.spender;
-    // spender.multiplier+=1;
-    // // spender.multiplier_tier = 0;
-    // spender.points_earned += 1;
 
     emit!(ChainFundMeCreated {
         creator: ctx.accounts.creator.key(),

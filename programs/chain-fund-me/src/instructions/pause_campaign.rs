@@ -14,9 +14,9 @@ pub fn process_pause_campaign(ctx: Context<PauseCampaign>, paused: bool, campaig
     let factory = &ctx.accounts.factory;
 
     let is_moderator = factory
-    .moderators
-    .iter()
-    .any(|m| m.moderator == ctx.accounts.moderator.key());
+        .moderators
+        .iter()
+        .any(|m| m.moderator == ctx.accounts.moderator.key());
 
     require!(is_moderator, CrowdfundingError::NotModerator);
 
