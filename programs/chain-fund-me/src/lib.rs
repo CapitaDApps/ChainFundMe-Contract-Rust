@@ -71,6 +71,10 @@ pub mod chain_fund_me {
         process_pause_campaign(ctx, paused, campaign_id)
     }
 
+    pub fn end_campaign(ctx: Context<EndCampaign>)-> Result<()>{
+        process_end_campaign(ctx)
+    }
+
     pub fn withdraw<'info>(ctx: Context<'_, '_, '_, 'info, Withdraw<'info>>) -> Result<()> {
         process_withdraw(ctx)
     }
